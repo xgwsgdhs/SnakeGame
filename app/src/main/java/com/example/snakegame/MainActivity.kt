@@ -82,40 +82,43 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 // 动态更新方块位置
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        // 移动蛇的身体
-                        for (i in snakeBody.size - 1 downTo 1) {
-                            snakeBody[i] = snakeBody[i - 1] // 每节跟随前一节
-                        }
+                LaunchedEffect(gameOver.value) {
+                    if (!gameOver.value) {
+                        while (true) {
+                            // 如果游戏结束，跳出循环
+                            if (gameOver.value) break
 
-                        // 移动蛇头
-                        snakeBody[0] = when (direction.value) {
-                            Direction.UP -> snakeBody[0].copy(y = (snakeBody[0].y - 50f).coerceAtLeast(0f))
-                            Direction.DOWN -> snakeBody[0].copy(y = (snakeBody[0].y + 50f).coerceAtMost(screenSize.value.height - 50f))
-                            Direction.LEFT -> snakeBody[0].copy(x = (snakeBody[0].x - 50f).coerceAtLeast(0f))
-                            Direction.RIGHT -> snakeBody[0].copy(x = (snakeBody[0].x + 50f).coerceAtMost(screenSize.value.width - 50f))
-                        }
+                            // 移动蛇的身体
+                            for (i in snakeBody.size - 1 downTo 1) {
+                                snakeBody[i] = snakeBody[i - 1]
+                            }
 
-                        // 碰撞检测
-                        if (isCollision(snakeBody[0], foodPosition.value)) {
-                            score.value += 1
-                            foodPosition.value = generateRandomFoodPosition(screenSize.value, snakeBody[0])
+                            // 移动蛇头
+                            snakeBody[0] = when (direction.value) {
+                                Direction.UP -> snakeBody[0].copy(y = (snakeBody[0].y - 50f).coerceAtLeast(0f))
+                                Direction.DOWN -> snakeBody[0].copy(y = (snakeBody[0].y + 50f).coerceAtMost(screenSize.value.height - 50f))
+                                Direction.LEFT -> snakeBody[0].copy(x = (snakeBody[0].x - 50f).coerceAtLeast(0f))
+                                Direction.RIGHT -> snakeBody[0].copy(x = (snakeBody[0].x + 50f).coerceAtMost(screenSize.value.width - 50f))
+                            }
 
-                            // 将新增加的一节初始化为蛇尾的位置
-                            val tail = snakeBody.last()
-                            snakeBody.add(tail)
-                        }
+                            // 碰撞检测
+                            if (isCollision(snakeBody[0], foodPosition.value)) {
+                                score.value += 1
+                                foodPosition.value = generateRandomFoodPosition(screenSize.value, snakeBody[0])
 
-                        if (snakeBody[0].x < 0 || snakeBody[0].x >= screenSize.value.width ||
-                            snakeBody[0].y < 0 || snakeBody[0].y >= screenSize.value.height) {
-                            gameOver.value = true // 撞墙，游戏结束
-                        }
+                                // 将新增加的一节初始化为蛇尾的位置
+                                val tail = snakeBody.last()
+                                snakeBody.add(tail)
+                            }
 
-                        if (snakeBody.subList(1, snakeBody.size).any { it == snakeBody[0] }) {
-                            gameOver.value = true // 撞到自己，游戏结束
+                            // 碰撞到墙壁
+                            if (snakeBody[0].x < 0 || snakeBody[0].x >= screenSize.value.width - 50f ||
+                                snakeBody[0].y < 0 || snakeBody[0].y >= screenSize.value.height - 50f) {
+                                gameOver.value = true // 撞墙，游戏结束
+                            }
+
+                            delay(200L) // 控制移动速度
                         }
-                        delay(200L) // 控制移动速度
                     }
                 }
 
@@ -138,7 +141,45 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                 ) {
+                    if (gameOver.value) {
+                        // 显示游戏结束文本
+                        Text(
+                            text = "Game Over!",
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                        )
 
+                        // Play Again 按钮
+                        Button(
+                            onClick = {
+                                // 重置游戏状态
+                                snakeBody.clear()
+                                snakeBody.add(Offset(100f, 100f))
+                                score.value = 0
+                                direction.value = Direction.RIGHT
+                                gameOver.value = false
+
+                                // 重新生成食物位置
+                                foodPosition.value = generateRandomFoodPosition(screenSize.value, snakeBody[0])
+                            },
+                            modifier = Modifier.align(Alignment.Center).padding(top = 60.dp)
+                        ) {
+                            Text("Play Again")
+                        }
+
+                        // Back to Home 按钮
+                        Button(
+                            onClick = {
+                                // 处理返回首页的逻辑
+                                // 例如，使用导航控制器跳转到首页
+                            },
+                            modifier = Modifier.align(Alignment.Center).padding(top = 120.dp)
+                        ) {
+                            Text("Back to Home")
+                        }
+                    }
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         // 更新屏幕尺寸，避免为空
                             screenSize.value = size
